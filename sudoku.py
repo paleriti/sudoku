@@ -12,7 +12,7 @@ BOARD_WIDTH = 9
 BOARD_HEIGHT = 9
 assert BOARD_HEIGHT == 9 and BOARD_WIDTH == 9 # A classic Sudoku board is 9x9 grids
 
-# The string for displaying the boarqd:
+# The string for displaying the board:
 BOARD_TEMPLATE = """
     1 2 3 | 4 5 6 | 7 8 9
    _______________________
@@ -270,15 +270,16 @@ def getPlayerCell(board):
 	print("Please select the cell you want to make a guess or Q for QUIT:")
 	while True:  # Keep asking player until they enter a valid move.
 		response = input("> ").upper().strip()
-		
+
+		if response.startswith('Q'):
+			print("Thanks for playing!")
+			input('Press ENTER to exit.')
+			sys.exit()
+
 		# Rename colomn and row for easy use.
 		selectedColomn = int(response[1]) - 1
 		selectedRow = BOARD_ROW_LABELS.index(response[0])
 		selectedCell = (selectedColomn, selectedRow)
-		
-		if response.startswith('Q'):
-			print("Thanks for playing!")
-			sys.exit()
 		
 		if len(response) != 2:
 			print('Please use this format when you select your cell : A1 or c3')
@@ -321,6 +322,7 @@ def getPlayerGuess(board, cell):
 
 		if response.startswith('Q'):
 			print("Thanks for playing!")
+			input('Press ENTER to exit.')
 			sys.exit()
 			
 		if response.startswith('H'):
@@ -369,6 +371,7 @@ def isComplete(board):
 				if len(pn) == 0: # There is no valid move
 					print("GAME OVER! You don't have any more valid move")
 					displayBoard(board) # Display the board one last time.
+					input('Press ENTER to exit!')
 					sys.exit()
 				else:
 					return False
