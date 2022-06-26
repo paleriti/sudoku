@@ -7,7 +7,7 @@ import random, copy, sys
 # Constants used for displaying the board:
 EMPTY_SPACE = " " 
 BOARD_ROW_LABELS = ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I')
-BOARD_COLOMN_LABELS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+BOARD_COLOMN_LABELS = (1, 2, 3, 4, 5, 6, 7, 8, 9)
 BOARD_WIDTH = 9
 BOARD_HEIGHT = 9
 assert BOARD_HEIGHT == 9 and BOARD_WIDTH == 9 # A classic Sudoku board is 9x9 grids
@@ -39,7 +39,7 @@ def main():
 	print(
         """9x9 Sudoku, by Yasar Murat, yasarmurat@msn.com
 
-Fill a 9×9 grid with digits so that each column, each row, and each of the nine 3×3 subgrids that compose the grid contain all of the digits from 1 to 9 once.
+Fill a 9x9 grid with digits so that each column, each row, and each of the nine 3x3 subgrids that compose the grid contain all of the digits from 1 to 9 once.
 """
     )
 	# Set up the game:
