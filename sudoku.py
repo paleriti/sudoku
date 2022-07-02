@@ -2,12 +2,16 @@
 
 A logic-based, combinatorial number-placement puzzle."""
 
-import random, copy, sys
+import random, sys
+
+# TODO : previousmoves u kaydet ve geri yuklemeyi ayarla
+# TODO : docstring yaz
 
 # Constants used for displaying the board:
+PLAYED_MOVES = {}
 EMPTY_SPACE = " " 
 BOARD_ROW_LABELS = ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I')
-BOARD_COLOMN_LABELS = (1, 2, 3, 4, 5, 6, 7, 8, 9)
+BOARD_COLOMN_LABELS = ('1', '2', '3', '4', '5', '6', '7', '8', '9')
 BOARD_WIDTH = 9
 BOARD_HEIGHT = 9
 assert BOARD_HEIGHT == 9 and BOARD_WIDTH == 9 # A classic Sudoku board is 9x9 grids
@@ -70,11 +74,16 @@ Fill a 9x9 grid with digits so that each column, each row, and each of the nine 
 		# Get player move
 		playerMove = getPlayerMove(gameBoard)
 
-		# Make the move and update the game board accordingly
+		# Rename playerMove for easy use
 		colomnIndex = playerMove[0][0]
 		rowIndex = playerMove[0][1]
 		move = playerMove[1]
+		
+		# Make the move and update the game board accordingly
 		gameBoard[(colomnIndex, rowIndex)] = move
+		
+		# 
+		PLAYED_MOVES[(colomnIndex, rowIndex)] = move
 		
 		# Save the board to a file for later use after a move.
 		saveToFile(gameBoard)
@@ -196,15 +205,18 @@ def displayBoard(board):
 	Prepare a list to pass to the format() string method for the board template. 
 	The list holds all of the board's digits (and empty spaces) going left to right, top to bottom:
 """
-
+	remainingSpaces = 0
 	gridChars = []
 	for rowIndex in range(BOARD_HEIGHT):
 		for colomnIndex in range(BOARD_WIDTH):
 			gridChars.append(board[(colomnIndex, rowIndex)])
+			if board[(colomnIndex, rowIndex)] == EMPTY_SPACE:
+				remainingSpaces += 1
 
 	# Display the board.
 	print(BOARD_TEMPLATE.format(*gridChars))
-
+	print(f'Remaining space : {remainingSpaces} ''\n')
+	
 def saveToFile(board):
 	""" Takes the board as parameter and converts its values into one string value and then writes this string value to a file for later use. """
 	
@@ -223,7 +235,7 @@ def saveToFile(board):
 		
 	with open('Sudoku.sdb', 'w') as fileObj:
 		fileObj.write(valueStr)
-
+	
 def isValid(board, colNum, rowNum, num):
 	"""Returns True if the generated number is valid for the board, else returns False """
 	
@@ -259,7 +271,7 @@ def getPossibleNumbers(board, colNum, rowNum):
 	for i in range(1, BOARD_WIDTH + 1):
 		if isValid(board, colNum, rowNum, i):
 			possibleNumbers.append(i)
-			
+	
 	return possibleNumbers
 
 def getPlayerCell(board):
@@ -267,7 +279,7 @@ def getPlayerCell(board):
 
     Returns a tuple which contains (column, row) that the player selected to make a guess. """
 
-	print("Please select the cell you want to make a guess or Q for QUIT:")
+	print('Please choose : Select a cell, (R)oll back last move or (Q)uit.')
 	while True:  # Keep asking player until they enter a valid move.
 		response = input("> ").upper().strip()
 
@@ -275,24 +287,34 @@ def getPlayerCell(board):
 			print("Thanks for playing!")
 			input('Press ENTER to exit.')
 			sys.exit()
+		
+		if response.startswith('R'):
+			movesCount = len(list(PLAYED_MOVES.keys()))
+			if not movesCount == 0: # Can be rolled back
+				previousBoard = rollBack(board)
+				displayBoard(previousBoard)
+			else:
+				print('Nothing to roll back!')
+			print('Please choose : Select a cell, (R)oll back last move or (Q)uit.')
+			continue
+		
+		if len(response) != 2:
+			print('Please use this format when you select your cell : A1 or c3')
+			continue # Ask player again for their move.
+
+		if not response[0] in BOARD_ROW_LABELS:
+			print('Your selected cell must start with a valid letter (ie. from A to I)')
+			continue  # Ask player again for their move.
+			
+		if not response[1] in BOARD_COLOMN_LABELS:
+			print('Your selected cell must end with a valid number (ie. from 1 to 9)')
+			continue # Ask player again for their move.
 
 		# Rename colomn and row for easy use.
 		selectedColomn = int(response[1]) - 1
 		selectedRow = BOARD_ROW_LABELS.index(response[0])
 		selectedCell = (selectedColomn, selectedRow)
-		
-		if len(response) != 2:
-			print('Please use this format when you select your cell : A1 or c3')
-			continue # Ask player again for their move.
-			
-		if not response[0] in BOARD_ROW_LABELS:
-			print('Your selected cell must start with a valid letter (ie. from A to I)')
-			continue  # Ask player again for their move.
-			
-		if not int(response[1]) in BOARD_COLOMN_LABELS:
-			print('Your selected cell must end with a valid number (ie. from 1 to 9)')
-			continue # Ask player again for their move.
-		
+
 		if board[selectedCell] != EMPTY_SPACE:
 			print('Please select an empty cell')
 			continue # Ask player again for their move.
@@ -312,36 +334,35 @@ def getPlayerGuess(board, cell):
 		
 		possibleNumbers = getPossibleNumbers(board, colomn, row)
 		
-		print(f'Please choose: Enter a single digit for [ {cellName} ], show (H)int, change (C)ell or (Q)uit')
+		print(f'Please choose : Enter a single digit for [ {cellName} ], show (H)int, change (C)ell or (Q)uit')
 			
 		response = input("> ").upper().strip()
 	
 		if len(response) != 1:
-			print('Please choose: Enter a single digit, show (H)int, change (C)ell or (Q)uit ')
 			continue # Ask player again for their move.
 
 		if response.startswith('Q'):
 			print("Thanks for playing!")
 			input('Press ENTER to exit.')
 			sys.exit()
-			
+	
+		if response.startswith('C'):
+			cell = getPlayerCell(board)
+			continue # Ask player again for their move.
+					
 		if response.startswith('H'):
 			print(f'Possible numbers for [ {cellName} ] : {possibleNumbers}')
 			continue # Ask player again for their move.
 		
-		if response.startswith('C'):
-			cell = getPlayerCell(board)
+		if not response.isdigit(): # if the player did not enter Q, C or H, they must enter a number.
 			continue # Ask player again for their move.
-			
+		
 		if not int(response) in possibleNumbers:
-			print(f'Your guess [ {response} ] is not valid: it is used either in the colomn, row or subgrid.')
+			print(f'Your guess [ {response} ] is not valid: it is used either in colomn, in row or in subgrid.')
 			continue # Ask player again for their move.
 		
-		if response.isdigit(): # A valid response is given
-			return cell, int(response)
-		
-		else:
-			continue # Ask player again for their move.
+		# A valid response is given
+		return cell, int(response)
 		
 def getPlayerMove(board):
 	"""Let a player select a cell on the board and make a guess for that cell.
@@ -351,7 +372,6 @@ def getPlayerMove(board):
 	playerMove = []
 	
 	firstCell = getPlayerCell(board) # Player selects a cell
-	print()
 	lastCell, guess = getPlayerGuess(board, firstCell) # Player makes a guess for their first cell or changes the cell and makes a guess for their new cell.
 	# If player doesn't change the cell, firstCell and lastCell is the same.'
 	playerMove.append(lastCell)
@@ -359,23 +379,51 @@ def getPlayerMove(board):
 	
 	return playerMove
 
+def rollBack(board):
+	"""
+	"""
+	
+	playedCells = list(PLAYED_MOVES.keys())
+	
+	if not len(playedCells) == 0:
+		cellToClear = playedCells[-1]
+		board[(cellToClear)] = ' '
+		del PLAYED_MOVES[cellToClear]
+		
+	return board
+	
 def isComplete(board):
 	""" Checks whether the board is complete.
 	
 	Returns True if the board is complete without any empty space, returns False if there is still room for play. """
 	
+	noEmptyCell = True
+	
 	for y in range(BOARD_HEIGHT):
 		for x in range(BOARD_WIDTH):
 			if board[(x, y)] == EMPTY_SPACE:
+				noEmptyCell = False
+				
 				pn = getPossibleNumbers(board, x, y)
-				if len(pn) == 0: # There is no valid move
-					print("GAME OVER! You don't have any more valid move")
-					displayBoard(board) # Display the board one last time.
-					input('Press ENTER to exit!')
-					sys.exit()
-				else:
-					return False
-	return True
+				if len(pn) == 0: # There is no valid move for at least one cell.
+					print("You don't have any more valid move! You can (R)oll back or (Q)uit.")
+					while True:
+						response = input("> ").upper().strip()
+					
+						if response.startswith('Q'):
+							print("Thanks for playing!")
+							input('Press ENTER to exit.')
+							sys.exit()
+						
+						if response.startswith('R'):
+							rollBack(board)
+							break
+						
+						else:
+							print("You don't have any more valid move! You can (R)oll back or (Q)uit.")
+							continue
+
+	return noEmptyCell
 
 #  If this program was run (instead of imported), run the game:
 if __name__ == "__main__":
