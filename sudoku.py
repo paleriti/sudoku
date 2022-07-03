@@ -4,11 +4,7 @@ A logic-based, combinatorial number-placement puzzle."""
 
 import random, sys
 
-# TODO : previousmoves u kaydet ve geri yuklemeyi ayarla
-# TODO : docstring yaz
-
 # Constants used for displaying the board:
-PLAYED_MOVES = {}
 EMPTY_SPACE = " " 
 BOARD_ROW_LABELS = ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I')
 BOARD_COLOMN_LABELS = ('1', '2', '3', '4', '5', '6', '7', '8', '9')
@@ -52,27 +48,27 @@ Fill a 9x9 grid with digits so that each column, each row, and each of the nine 
 	
 	if response == 'Y':
 		try:
-			oldBoard, remainingSpace = loadOldBoard()
+			oldBoard, playedMoves, remainingSpace = loadOldBoard()
 			if remainingSpace == 0:
 				print('You completed your last board. Getting you a new one.')
-				gameBoard = getNewBoard()
+				gameBoard, playedMoves = getNewBoard()
 			else:
-				gameBoard = oldBoard
+				gameBoard = oldBoard	
 		except FileNotFoundError:
 			print('There is no saved board. Getting you a new one.')
-			gameBoard = getNewBoard()
+			gameBoard, playedMoves = getNewBoard()
 	else:
-		gameBoard = getNewBoard()
+		gameBoard, playedMoves = getNewBoard()
 
-	# Save the board to a file for later use.
-	saveToFile(gameBoard)
+	# Save the board and played moves to a file for later use.
+	saveToFile(gameBoard, playedMoves)
 	
 	while True:  # Run a player's turn.
         # Display the board:
 		displayBoard(gameBoard)
 		
 		# Get player move
-		playerMove = getPlayerMove(gameBoard)
+		playerMove = getPlayerMove(gameBoard, playedMoves)
 
 		# Rename playerMove for easy use
 		colomnIndex = playerMove[0][0]
@@ -82,16 +78,17 @@ Fill a 9x9 grid with digits so that each column, each row, and each of the nine 
 		# Make the move and update the game board accordingly
 		gameBoard[(colomnIndex, rowIndex)] = move
 		
-		# 
-		PLAYED_MOVES[(colomnIndex, rowIndex)] = move
+		# Add player move to played move to enable roll back functionality
+		playedMoves[(colomnIndex, rowIndex)] = move
 		
-		# Save the board to a file for later use after a move.
-		saveToFile(gameBoard)
+		# Save the board and played moves to a file for later use.
+		saveToFile(gameBoard, playedMoves)
 		
 		# Check for a complete board
-		if isComplete(gameBoard):
+		if isComplete(gameBoard, playedMoves):
 			displayBoard(gameBoard) # Display the board one last time.
 			print("WELL DONE! You have completed the board.")
+			input("Press ENTER to exit.")
 			sys.exit()
 
 def loadOldBoard():
@@ -105,14 +102,15 @@ def loadOldBoard():
 	for y in range(BOARD_HEIGHT):
 		for x in range(BOARD_WIDTH):
 			try:
-				board[(x, y)] = int(valueStr[i])
+				board[(x, y)] = int(valueStr[i]) # For digits 
 			except ValueError:
-				board[(x, y)] = valueStr[i]
+				board[(x, y)] = valueStr[i] # For empty spaces
 			i += 1
 	
-	remainingSpaces = int(valueStr[-2] + valueStr[-1])
+	previousMoves = loadMoves()
+	remainingSpaces = int(valueStr[-2] + valueStr[-1]) # Last two number of read value
 	
-	return board, remainingSpaces
+	return board, previousMoves, remainingSpaces
 
 def getNewBoard():
 	"""Returns a dictionary that represents a new Sudoku board.
@@ -135,12 +133,13 @@ def getNewBoard():
 		else:
 			continue
 			
-	# First generate a full board with no space, then place empty spaces randomly based on the number of empty spaces.
+	# First generate a full board with no space, then place empty spaces randomly based on the number of empty spaces selected.
 	fullBoard = getCompleteBoard()
 	emptiedBoard = getEmptyCells(fullBoard, emptySpace)
-	#emptiedBoard = getEmptyCells(copy.copy(fullBoard), emptySpace)
 	
-	return emptiedBoard
+	playedMoves = {} # For a new board an empty dictionary is used for played moves.
+
+	return emptiedBoard, playedMoves
 	
 def getCompleteBoard():
 	"""Returns a dictionary that represents a new complete Sudoku board.
@@ -157,7 +156,7 @@ def getCompleteBoard():
 		colomnIndex = 0
 		while True:
 			digit = random.randint(1,BOARD_WIDTH)
-			possibleDigits = getPossibleNumbers(fullBoard, colomnIndex, rowIndex)
+			possibleDigits = getPossibleNumbers(fullBoard, colomnIndex, rowIndex) 
 			if len(possibleDigits) > 0:
 				if digit in possibleDigits:
 					fullBoard[(colomnIndex, rowIndex)] = digit
@@ -180,21 +179,21 @@ def getCompleteBoard():
 def getEmptyCells(board, difficulty):
 	""" Takes the current board, places random empty cells and returns the board with empty cells for game play. """
 	
-	NUM_OF_EMPTY_SPACE = difficulty
+	NumOfEmptySpace = difficulty
 	spaces = 0
 	emptyCells = []
 	
 	while True:
-		cell = (random.randint(0, 8), random.randint(0, 8))
+		cell = (random.randint(0, 8), random.randint(0, 8)) # Selects a random cell
 		
-		# Makes sure the number of empty cells that are placed is matched with the level of difficulty.
-		if cell in emptyCells: 		
+		# Ensures the number of empty cells that are placed is matched with the level of difficulty.
+		if cell in emptyCells:
 			continue
 		else:
 			emptyCells.append(cell)
 			board[cell] = EMPTY_SPACE
 			spaces += 1
-			if spaces == NUM_OF_EMPTY_SPACE:
+			if spaces == NumOfEmptySpace:
 				break
 
 	return board
@@ -217,10 +216,12 @@ def displayBoard(board):
 	print(BOARD_TEMPLATE.format(*gridChars))
 	print(f'Remaining space : {remainingSpaces} ''\n')
 	
-def saveToFile(board):
-	""" Takes the board as parameter and converts its values into one string value and then writes this string value to a file for later use. """
+def saveToFile(board, moves):
+	""" Takes the board as parameter and converts its values into one single string value to write to a file for later use. """
 	
 	valueList = list(board.values())
+
+	# Add all board digits to ValueStr.
 	valueStr = ''
 	for i in range(len(valueList)):
 		valueStr += str(valueList[i])
@@ -232,9 +233,37 @@ def saveToFile(board):
 			if board[(x, y)] == EMPTY_SPACE:
 				remainingSpaces += 1
 	valueStr += '{:02}'.format(remainingSpaces)
-		
+	
+	# write ValueStr to file.
 	with open('Sudoku.sdb', 'w') as fileObj:
 		fileObj.write(valueStr)
+
+	# Add all keys and values in playedMoves to playedMovesStr
+	playedCells = list(moves.keys())
+	playedDigits = list(moves.values())
+	playedMovesStr = ""
+	for i in range(len(playedCells)):
+		for j in range(2):
+			playedMovesStr += str(playedCells[i][j])
+		playedMovesStr += str(playedDigits[i])
+
+	# Write playedMovesStr to file.
+	with open('Moves.sdb', 'w') as fileObj:
+		fileObj.write(playedMovesStr)
+
+def loadMoves():
+	""" Reads a certain file and returns a dictionary that represents the last played moves. """
+
+	with open('Moves.sdb', 'r') as fileObj:
+		movesStr = fileObj.read()
+
+	playedMoves = {}
+	i = 0
+	while i < len(movesStr):
+		playedMoves[(int(movesStr[i]), int(movesStr[i+1]))] = int(movesStr[i+2])
+		i += 3
+	
+	return playedMoves
 	
 def isValid(board, colNum, rowNum, num):
 	"""Returns True if the generated number is valid for the board, else returns False """
@@ -274,7 +303,7 @@ def getPossibleNumbers(board, colNum, rowNum):
 	
 	return possibleNumbers
 
-def getPlayerCell(board):
+def getPlayerCell(board, moves):
 	"""Let a player select a cell on the board.
 
     Returns a tuple which contains (column, row) that the player selected to make a guess. """
@@ -289,9 +318,9 @@ def getPlayerCell(board):
 			sys.exit()
 		
 		if response.startswith('R'):
-			movesCount = len(list(PLAYED_MOVES.keys()))
+			movesCount = len(list(moves.keys()))
 			if not movesCount == 0: # Can be rolled back
-				previousBoard = rollBack(board)
+				previousBoard = rollBack(board, moves)
 				displayBoard(previousBoard)
 			else:
 				print('Nothing to roll back!')
@@ -329,7 +358,6 @@ def getPlayerGuess(board, cell):
 		# Rename the colomn and row index in selected cell for easy use.
 		colomn = cell[0]
 		row = cell[1]
-		
 		cellName = str(BOARD_ROW_LABELS[row]) + str(colomn + 1) # Used in comments that are showed to player.
 		
 		possibleNumbers = getPossibleNumbers(board, colomn, row)
@@ -338,7 +366,7 @@ def getPlayerGuess(board, cell):
 			
 		response = input("> ").upper().strip()
 	
-		if len(response) != 1:
+		if len(response) != 1: # if the player did not enter Q, C or H, they must enter a single number.
 			continue # Ask player again for their move.
 
 		if response.startswith('Q'):
@@ -364,35 +392,39 @@ def getPlayerGuess(board, cell):
 		# A valid response is given
 		return cell, int(response)
 		
-def getPlayerMove(board):
+def getPlayerMove(board, moves):
 	"""Let a player select a cell on the board and make a guess for that cell.
 
     Returns a list that contain a tuple for (column, row) and the digit that the player selected to make the move. """
 
 	playerMove = []
 	
-	firstCell = getPlayerCell(board) # Player selects a cell
-	lastCell, guess = getPlayerGuess(board, firstCell) # Player makes a guess for their first cell or changes the cell and makes a guess for their new cell.
-	# If player doesn't change the cell, firstCell and lastCell is the same.'
+	firstCell = getPlayerCell(board, moves) # Player selects a cell
+
+	""" Player makes a guess for their first cell or changes the cell then makes a guess for their new cell.
+	If player doesn't change the cell, firstCell and lastCell is the same. """
+	lastCell, guess = getPlayerGuess(board, firstCell)
+
 	playerMove.append(lastCell)
 	playerMove.append(guess)
 	
 	return playerMove
 
-def rollBack(board):
-	"""
-	"""
+def rollBack(board, moves):
+	""" Takes the current board and played moves as parameter and returns a dictionary that represents a board with one move rolled back. """
 	
-	playedCells = list(PLAYED_MOVES.keys())
+	playedCells = list(moves.keys())
 	
-	if not len(playedCells) == 0:
+	if not len(playedCells) == 0: # Can be rolled back
 		cellToClear = playedCells[-1]
 		board[(cellToClear)] = ' '
-		del PLAYED_MOVES[cellToClear]
-		
+		del moves[cellToClear]
+	
+	saveToFile(board, moves) # Save this 'rolled back' move so that player can continue if quits.
+
 	return board
 	
-def isComplete(board):
+def isComplete(board, moves):
 	""" Checks whether the board is complete.
 	
 	Returns True if the board is complete without any empty space, returns False if there is still room for play. """
@@ -402,12 +434,12 @@ def isComplete(board):
 	for y in range(BOARD_HEIGHT):
 		for x in range(BOARD_WIDTH):
 			if board[(x, y)] == EMPTY_SPACE:
-				noEmptyCell = False
+				noEmptyCell = False # Found an empty space so player can continue playing.
 				
 				pn = getPossibleNumbers(board, x, y)
 				if len(pn) == 0: # There is no valid move for at least one cell.
 					print("You don't have any more valid move! You can (R)oll back or (Q)uit.")
-					while True:
+					while True: # Keep asking player until they enter a valid move.
 						response = input("> ").upper().strip()
 					
 						if response.startswith('Q'):
@@ -416,7 +448,7 @@ def isComplete(board):
 							sys.exit()
 						
 						if response.startswith('R'):
-							rollBack(board)
+							rollBack(board, moves)
 							break
 						
 						else:
