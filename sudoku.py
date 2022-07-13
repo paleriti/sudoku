@@ -362,7 +362,7 @@ def getPlayerCell(board, moves):
 		
 		return selectedCell
 
-def getPlayerGuess(board, cell):
+def getPlayerGuess(board, cell, moves):
 	"""Let player make a guess for their selected cell on the board."""
 
 	while True:  # Keep asking player until they enter a valid move.
@@ -387,7 +387,7 @@ def getPlayerGuess(board, cell):
 			sys.exit()
 	
 		if response.startswith('C'):
-			cell = getPlayerCell(board)
+			cell = getPlayerCell(board, moves)
 			continue # Ask player again for their move.
 					
 		if response.startswith('H'):
@@ -415,7 +415,7 @@ def getPlayerMove(board, moves):
 
 	""" Player makes a guess for their first cell or changes the cell then makes a guess for their new cell.
 	If player doesn't change the cell, firstCell and lastCell is the same. """
-	lastCell, guess = getPlayerGuess(board, firstCell)
+	lastCell, guess = getPlayerGuess(board, firstCell, moves)
 
 	playerMove.append(lastCell)
 	playerMove.append(guess)
