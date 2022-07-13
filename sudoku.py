@@ -43,22 +43,7 @@ Fill a 9x9 grid with digits so that each column, each row, and each of the nine 
 """
     )
 	# Set up the game:
-	print("Do you want to load your last board? (Y/N)")
-	response = input("> ").upper().strip()
-	
-	if response == 'Y':
-		try:
-			oldBoard, playedMoves, remainingSpace = loadOldBoard()
-			if remainingSpace == 0:
-				print('You completed your last board. Getting you a new one.')
-				gameBoard, playedMoves = getNewBoard()
-			else:
-				gameBoard = oldBoard	
-		except FileNotFoundError:
-			print('There is no saved board. Getting you a new one.')
-			gameBoard, playedMoves = getNewBoard()
-	else:
-		gameBoard, playedMoves = getNewBoard()
+	gameBoard, playedMoves = boardSetup()
 
 	# Save the board and played moves to a file for later use.
 	saveToFile(gameBoard, playedMoves)
@@ -90,6 +75,33 @@ Fill a 9x9 grid with digits so that each column, each row, and each of the nine 
 			print("WELL DONE! You have completed the board.")
 			input("Press ENTER to exit.")
 			sys.exit()
+
+def boardSetup():
+	""" Asks player if they want to load previous board or get a new board and returns a dictionary that represents a Sudoku board. """
+	
+	while True: 
+		print("Do you want to load your last board? (Y/N)")
+		response = input("> ").upper().strip()
+
+		if response.startswith('Y'):
+			try:
+				oldBoard, playedMoves, remainingSpace = loadOldBoard()
+				if remainingSpace == 0:
+					print('You completed your last board. Getting you a new one.')
+					board, playedMoves = getNewBoard()
+					break
+				else:
+					board = oldBoard
+					break
+			except FileNotFoundError:
+				print('There is no saved board. Getting you a new one.')
+				board, playedMoves = getNewBoard()
+				break
+		elif response.startswith('N'):
+			board, playedMoves = getNewBoard()
+			break
+	
+	return board, playedMoves
 
 def loadOldBoard():
 	""" Reads a certain file and returns a dictionary that represents the last played Sudoku board. """
