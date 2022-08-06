@@ -109,7 +109,7 @@ def boardSetup():
 def loadOldBoard():
     """Reads a certain file and returns a dictionary that represents the last played Sudoku board."""
 
-    with open("Sudoku.sdb", "r") as fileObj:
+    with open("Sudoku.values", "r") as fileObj:
         valueStr = fileObj.read()
 
     board = {}
@@ -117,9 +117,9 @@ def loadOldBoard():
     for y in range(BOARD_HEIGHT):
         for x in range(BOARD_WIDTH):
             try:
-                board[(x, y)] = int(valueStr[i])  # For digits
+                board[(x, y)] = int(valueStr[i])  # Used for digits
             except ValueError:
-                board[(x, y)] = valueStr[i]  # For empty spaces
+                board[(x, y)] = valueStr[i]  # Used for empty spaces
             i += 1
 
     previousMoves = loadMoves()
@@ -254,7 +254,7 @@ def saveToFile(board, moves):
     valueStr += "{:02}".format(remainingSpaces)
 
     # write ValueStr to file.
-    with open("Sudoku.sdb", "w") as fileObj:
+    with open("Sudoku.values", "w") as fileObj:
         fileObj.write(valueStr)
 
     # Add all keys and values in playedMoves to playedMovesStr
@@ -267,14 +267,14 @@ def saveToFile(board, moves):
         playedMovesStr += str(playedDigits[i])
 
     # Write playedMovesStr to file.
-    with open("Moves.sdb", "w") as fileObj:
+    with open("Sudoku.moves", "w") as fileObj:
         fileObj.write(playedMovesStr)
 
 
 def loadMoves():
     """Reads a certain file and returns a dictionary that represents the last played moves."""
 
-    with open("Moves.sdb", "r") as fileObj:
+    with open("Sudoku.moves", "r") as fileObj:
         movesStr = fileObj.read()
 
     playedMoves = {}
