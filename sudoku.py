@@ -168,6 +168,7 @@ def getCompleteBoard():
         for colomn in range(BOARD_WIDTH):
             fullBoard[(colomn, row)] = 0
 
+    resetCounter = 0
     rowIndex = 0
     while True:
         colomnIndex = 0
@@ -185,6 +186,15 @@ def getCompleteBoard():
             else:
                 for x in range(BOARD_WIDTH):
                     fullBoard[(x, rowIndex)] = 0  # whole row is set to zero to start over
+
+                resetCounter += 1
+                if resetCounter == 100: # whole board is set to zero to start over
+                    for row in range(BOARD_HEIGHT):
+                        for colomn in range(BOARD_WIDTH):
+                            fullBoard[(colomn, row)] = 0
+                    resetCounter = 0
+                    rowIndex = 0
+                    
                 colomnIndex = 0
                 continue
         rowIndex += 1
