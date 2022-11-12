@@ -11,6 +11,7 @@ BOARD_COLOMN_LABELS = ("1", "2", "3", "4", "5", "6", "7", "8", "9")
 BOARD_WIDTH = 9
 BOARD_HEIGHT = 9
 assert BOARD_HEIGHT == 9 and BOARD_WIDTH == 9  # A classic Sudoku board is 9x9 grids
+IS_SAVEGAME_POSSIBLE = True
 
 # The string for displaying the board:
 BOARD_TEMPLATE = """
@@ -47,7 +48,8 @@ Fill a 9x9 grid with digits so that each column, each row, and each of the nine 
     gameBoard, playedMoves = boardSetup()
 
     # Save the board and played moves to a file for later use.
-    saveToFile(gameBoard, playedMoves)
+    if IS_SAVEGAME_POSSIBLE:
+        saveToFile(gameBoard, playedMoves)
 
     while True:  # Run a player's turn.
         # Display the board:
@@ -68,7 +70,8 @@ Fill a 9x9 grid with digits so that each column, each row, and each of the nine 
         playedMoves[(colomnIndex, rowIndex)] = move
 
         # Save the board and played moves to a file for later use.
-        saveToFile(gameBoard, playedMoves)
+        if IS_SAVEGAME_POSSIBLE:
+            saveToFile(gameBoard, playedMoves)
 
         # Check for a complete board
         if isComplete(gameBoard, playedMoves):
@@ -80,28 +83,30 @@ Fill a 9x9 grid with digits so that each column, each row, and each of the nine 
 
 def boardSetup():
     """Asks player if they want to load previous board or get a new board and returns a dictionary that represents a Sudoku board."""
+    if IS_SAVEGAME_POSSIBLE:
+        while True:
+            print("Do you want to load your last board? (Y/N)")
+            response = input("> ").upper().strip()
 
-    while True:
-        print("Do you want to load your last board? (Y/N)")
-        response = input("> ").upper().strip()
-
-        if response.startswith("Y"):
-            try:
-                oldBoard, playedMoves, remainingSpace = loadOldBoard()
-                if remainingSpace == 0:
-                    print("You completed your last board. Getting you a new one.")
+            if response.startswith("Y"):
+                try:
+                    oldBoard, playedMoves, remainingSpace = loadOldBoard()
+                    if remainingSpace == 0:
+                        print("You completed your last board. Getting you a new one.")
+                        board, playedMoves = getNewBoard()
+                        break
+                    else:
+                        board = oldBoard
+                        break
+                except FileNotFoundError:
+                    print("There is no saved board. Getting you a new one.")
                     board, playedMoves = getNewBoard()
                     break
-                else:
-                    board = oldBoard
-                    break
-            except FileNotFoundError:
-                print("There is no saved board. Getting you a new one.")
+            elif response.startswith("N"):
                 board, playedMoves = getNewBoard()
                 break
-        elif response.startswith("N"):
-            board, playedMoves = getNewBoard()
-            break
+    else:
+        board, playedMoves = getNewBoard()
 
     return board, playedMoves
 
@@ -188,13 +193,13 @@ def getCompleteBoard():
                     fullBoard[(x, rowIndex)] = 0  # whole row is set to zero to start over
 
                 resetCounter += 1
-                if resetCounter == 100: # whole board is set to zero to start over
+                if resetCounter == 100:  # whole board is set to zero to start over
                     for row in range(BOARD_HEIGHT):
                         for colomn in range(BOARD_WIDTH):
                             fullBoard[(colomn, row)] = 0
                     resetCounter = 0
                     rowIndex = 0
-                    
+
                 colomnIndex = 0
                 continue
         rowIndex += 1
@@ -232,6 +237,10 @@ def displayBoard(board):
 
     Prepare a list to pass to the format() string method for the board template.
     The list holds all of the board's digits (and empty spaces) going left to right, top to bottom:"""
+
+    # Clears the screen before displaying the board
+    print("\033[H\033[J", end="")
+
     remainingSpaces = 0
     gridChars = []
     for rowIndex in range(BOARD_HEIGHT):
